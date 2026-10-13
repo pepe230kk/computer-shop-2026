@@ -16,7 +16,7 @@ export default function Home() {
         Podstawa aplikacji sklepu komputerowego zrealizowana w ramach laboratorium 6
         z przedmiotu Programowanie BackEnd na Politechnice Krakowskiej.
       </p>
-      <p>Autor: Krzys</p>
+      <p>Autor: Krzysztof Kacprzak</p>
       <Link href="/product-list">Przejdź do katalogu produktów</Link>
     </div>
   );
