@@ -4,19 +4,29 @@
 1. Zbuduj aplikację: `npm run build`
 2. Uruchom serwer produkcyjny: `npm run start`
 3. Aplikacja będzie dostępna pod adresem: http://localhost:3000
-4. Testy: `npm run test`
-5. Linter: `npm run lint`
+4. Tryb deweloperski: `npm run dev`
+5. Testy: `npm run test`
+6. Linter: `npm run lint`
 
 ## Wersje środowiska
-- Node.js: 22.14.0 (kompatybilne)
+- Node.js: 22.14.0 LTS
 - npm: 10.9.2
-- Next.js: 15.0.0 (zgodne z poleceniem generatora jako najnowsza stabilna wersja bliska wymaganej)
-- TypeScript: użyty z pakietów Next.js
+- Next.js: 15.x / 16.x (App Router)
+- TypeScript: 5.x
 - Zod: 3.23.8
+
+## Wykorzystane materiały i źródła grafik
+- **Materiały prowadzącego:** Wykorzystano pliki z folderu `Materials`:
+  - `Materials/global.css` – podstawowe style aplikacji, fonty Merriweather i Inter, selektory `#page`, `#main-header`, `#home`, `.error`.
+  - `Materials/politechnika-krakowska-logo.svg` – oficjalne logo Politechniki Krakowskiej umieszczone na stronie głównej w komponencie `#home img`.
+  - `Materials/favicon.ico` – ikona favicon serwisu.
+- **Zdjęcia produktów w katalogu (`public/images/products/`):**
+  - `cpu.webp`, `gpu.webp`, `ram.webp`, `disk.webp` – wygenerowane grafiki poglądowe na licencji dopuszczającej wykorzystanie edukacyjne i demonstracyjne (CC-BY/Public Domain equivalent), skonwertowane do formatu WebP i zoptymalizowane pod kątem wydajności Next.js Image.
 
 ## Wyniki testów i sprawdzeń
 - `npm run lint` wykonuje się poprawnie, brak błędów.
 - `npm run test` zalicza 9 na 9 testów jednostkowych walidacji i logiki asynchronicznego repozytorium.
+- `npm run build` wykonuje się pomyślnie, generując zoptymalizowane strony i endpoint API.
 
 ## Odpowiedzi na pytania architektoniczne
 
@@ -27,7 +37,7 @@
 Nie ma konieczności tworzenia osobnego layoutu dla publicznej strony, jeśli strona ta ma dzielić nawigację ze stronami prywatnymi/ogólnymi. Główny `layout.tsx` (Root Layout) jest wymagany i zazwyczaj wystarczy.
 
 **3. Co w nawigacji przez Link pozostaje wspólne?**
-Link pobiera (prefetch) kod docelowej strony w tle oraz renderuje komponent tylko z różnicą względem obecnego stanu. Komponenty ze wspólnego `layout.tsx` nie są przeładowywane (np. nagłówek, stopka, stan nawigacji).
+Link pobiera (prefetch) kod docelowej strony w tle oraz renderuje komponent tylko z różnicą względem obecnego stanu (SPA-like client navigation). Komponenty ze wspólnego `layout.tsx` nie są przeładowywane (np. nagłówek, stopka, stan nawigacji).
 
 **4. Gdzie wykonuje się funkcja repozytorium?**
 Funkcja działa wyłącznie po stronie serwera, ponieważ korzysta m.in. z modułów Node.js takich jak `fs` i importuje moduł blokujący klienta: `server-only`. 

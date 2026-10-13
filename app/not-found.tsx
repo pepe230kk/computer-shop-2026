@@ -1,11 +1,13 @@
-import Link from 'next/link'
- 
+import Link from 'next/link';
+
 export default function NotFound() {
   return (
-    <div>
+    <div className="error">
       <h2>Nie znaleziono</h2>
       <p>Przepraszamy, ale żądany zasób nie istnieje.</p>
-      <Link href="/">Wróć na stronę główną</Link>
+      <Link href="/" className="btn-action">
+        Wróć na stronę główną
+      </Link>
     </div>
-  )
+  );
 }

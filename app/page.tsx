@@ -1,9 +1,23 @@
+import Image from "next/image";
+import Link from "next/link";
+
 export default function Home() {
   return (
-    <div>
-      <h1>Witaj w sklepie komputerowym</h1>
-      <p>Projekt zrealizowany w ramach laboratorium 6.</p>
+    <div id="home">
+      <Image
+        src="/politechnika-krakowska-logo.svg"
+        alt="Logo Politechniki Krakowskiej"
+        width={160}
+        height={160}
+        priority
+      />
+      <h1>Sklep Komputerowy</h1>
+      <p>
+        Podstawa aplikacji sklepu komputerowego zrealizowana w ramach laboratorium 6
+        z przedmiotu Programowanie BackEnd na Politechnice Krakowskiej.
+      </p>
       <p>Autor: Krzys</p>
+      <Link href="/product-list">Przejdź do katalogu produktów</Link>
     </div>
   );
 }
