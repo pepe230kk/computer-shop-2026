@@ -85,6 +85,45 @@ test("repository tests", async (t) => {
     const product = await getProductById(999999);
     assert.strictEqual(product, null);
   });
+
+  await t.test("immediate visibility of stock update in repository (wymóg z Lab 08)", async () => {
+    const products = await getProducts();
+    const testProduct = products[0];
+    const originalAmount = testProduct.amount;
+    const updatedAmount = originalAmount + 17;
+
+    // Aktualizacja w bazie danych przez klienta Prisma
+    const { prisma } = await import("./db");
+    await prisma.product.update({
+      where: { id: testProduct.id },
+      data: { amount: updatedAmount },
+    });
+
+    // Natychmiastowe odczytanie przez repozytorium
+    const freshProduct = await getProductById(testProduct.id);
+    assert.strictEqual(freshProduct?.amount, updatedAmount, "Repository must immediately reflect updated stock in PostgreSQL");
+
+    // Przywrócenie stanu początkowego
+    await prisma.product.update({
+      where: { id: testProduct.id },
+      data: { amount: originalAmount },
+    });
+
+    const restoredProduct = await getProductById(testProduct.id);
+    assert.strictEqual(restoredProduct?.amount, originalAmount);
+  });
+
+  await t.test("database enforces CHECK constraint for non-negative amount", async () => {
+    const { prisma } = await import("./db");
+    await assert.rejects(
+      async () => {
+        await prisma.$executeRawUnsafe(
+          'UPDATE "Product" SET "amount" = -10 WHERE "id" = 1'
+        );
+      },
+      /violates check constraint "product_amount_nonnegative"/
+    );
+  });
 });
 
 test("parameter interpretation tests (Tabela 4.1 & Sec 6)", async (t) => {

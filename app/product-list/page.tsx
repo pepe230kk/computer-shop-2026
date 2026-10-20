@@ -1,15 +1,22 @@
 import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { connection } from "next/server";
 import { getProducts } from "../lib/repository";
 import { parseCatalogQueryParams } from "../lib/params";
 import ProductFilters from "./product-filters";
+
+// Wymuszenie dynamicznego renderowania zgodnie z wytycznymi Lab 08
+export const dynamic = "force-dynamic";
 
 interface ProductListPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 export default async function ProductList({ searchParams }: ProductListPageProps) {
+  // Wymuszenie dynamicznego wykonania po stronie serwera przed zapytaniem do bazy danych
+  await connection();
+
   // 1. Asynchroniczny odczyt searchParams po stronie serwerowej (Next.js 15/16)
   const rawParams = await searchParams;
 

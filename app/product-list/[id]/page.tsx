@@ -2,26 +2,22 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { getProductById, getProducts } from "../../lib/repository";
+import { connection } from "next/server";
+import { getProductById } from "../../lib/repository";
 import { parseAndValidateId } from "../../lib/params";
+
+// Zgodnie z wytycznymi Lab 08 (Sekcja 7):
+// Usunięto generateStaticParams z Lab 07. Wymuszone dynamiczne renderowanie (force-dynamic),
+// aby strona zawsze odzwierciedlała bieżący stan magazynowy (amount) bezpośrednio z bazy danych PostgreSQL.
+export const dynamic = "force-dynamic";
 
 interface ProductDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
-// Rozszerzenie: generateStaticParams dla wybranego podzbioru produktów (pierwsze 5)
-// Pozostałe produkty są renderowane dynamicznie na żądanie (dynamicParams = true)
-export async function generateStaticParams() {
-  const products = await getProducts();
-  return products.slice(0, 5).map((p) => ({
-    id: p.id.toString(),
-  }));
-}
-
-export const dynamicParams = true;
-
 // Dynamiczne generowanie metadanych (tytuł i opis strony)
 export async function generateMetadata({ params }: ProductDetailPageProps): Promise<Metadata> {
+  await connection();
   const { id } = await params;
   const numericId = parseAndValidateId(id);
 
@@ -46,6 +42,9 @@ export async function generateMetadata({ params }: ProductDetailPageProps): Prom
 }
 
 export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
+  // Wymuszenie dynamicznego wykonania po stronie serwera przed zapytaniem do bazy danych
+  await connection();
+
   // 1. Asynchroniczne rozwiązanie params przez await (wymóg Next.js 15/16)
   const { id } = await params;
 
@@ -58,7 +57,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     notFound();
   }
 
-  // 3. Odczyt z asynchronicznego repozytorium serwerowego
+  // 3. Odczyt z asynchronicznego repozytorium serwerowego (Prisma / PostgreSQL)
   // Nie opakowujemy w try/catch zwracający notFound(), aby nie maskować awarii serwera
   const product = await getProductById(numericId);
   if (!product) {
