@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: CatalogCatchAllProps): Promis
   const { slug } = await params;
 
   if (!slug || slug.length === 0) {
-    return { title: "Katalog wielopoziomowy (Rozszerzenie [[...slug]]) | Sklep Komputerowy" };
+    return { title: "Kategorie produktów | Sklep Komputerowy" };
   }
 
   if (slug.length === 1) {
@@ -58,9 +58,9 @@ export default async function CatalogCatchAllPage({ params }: CatalogCatchAllPro
 
     return (
       <div>
-        <h1>Katalog wielopoziomowy (Rozszerzenie [[...slug]])</h1>
+        <h1>Kategorie produktów</h1>
         <p style={{ color: "#bcbcb7", marginBottom: "2rem" }}>
-          Demonstracja segmentów opcjonalnych Catch-all (<code>[[...slug]]</code>) w odrębnej sekcji trasy.
+          Wybierz kategorię podzespołów komputerowych, aby przejrzeć ofertę.
         </p>
         <div className="product-list">
           {categories.map((cat) => (

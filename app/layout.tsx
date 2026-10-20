@@ -25,7 +25,6 @@ export default function RootLayout({
               <ul>
                 <li><NavLink href="/">Strona główna</NavLink></li>
                 <li><NavLink href="/product-list">Katalog</NavLink></li>
-                <li><NavLink href="/catalog">Katalog (slug)</NavLink></li>
                 <li><NavLink href="/basket">Koszyk</NavLink></li>
                 <li><NavLink href="/order-history">Historia</NavLink></li>
                 <li><NavLink href="/about">O sklepie</NavLink></li>
