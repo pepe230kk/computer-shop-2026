@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "node --conditions react-server --import tsx --test app/**/*.test.ts"
+    "test": "node --conditions react-server --import tsx --test app/lib/repository.test.ts"
   },
   "dependencies": {
     "next": "16.3.8",

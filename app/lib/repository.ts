@@ -2,6 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { promises as fs } from "fs";
 import path from "path";
+import { CatalogQueryCriteria } from "./params";
 
 // 1. Zdefiniuj typ produktu i walidację rzeczywistych danych (Tabela 4.1).
 export const ProductSchema = z.object({
@@ -48,36 +49,48 @@ async function getProductsData(): Promise<Product[]> {
 }
 
 // 2. Moduł repozytorium:
-export type SortOption = "name-desc" | "date-desc";
+export type SortOption = "name" | "newest" | "name-desc" | "date-desc";
 
-export async function getProducts(options?: {
+export interface GetProductsOptions extends Partial<CatalogQueryCriteria> {
   sortBy?: SortOption;
+  category?: Product["type"] | "all";
   availableOnly?: boolean;
-  category?: Product["type"];
-}): Promise<Product[]> {
-  let products = await getProductsData();
+}
 
-  if (options?.availableOnly) {
+export async function getProducts(options?: GetProductsOptions): Promise<Product[]> {
+  const allProducts = await getProductsData();
+  // Kopia tablicy - gwarancja niemutowania danych wejściowych
+  let products = [...allProducts];
+
+  // 1. Filtr kategorii (type)
+  const categoryFilter = options?.type || options?.category;
+  if (categoryFilter && categoryFilter !== "all") {
+    products = products.filter((p) => p.type === categoryFilter);
+  }
+
+  // 2. Filtr dostępności (stock)
+  if (options?.stock === "available" || options?.availableOnly === true) {
     products = products.filter((p) => p.amount > 0);
+  } else if (options?.stock === "unavailable") {
+    products = products.filter((p) => p.amount === 0);
   }
 
-  if (options?.category) {
-    products = products.filter((p) => p.type === options.category);
-  }
+  // 3. Sortowanie i rozstrzyganie remisów przez id rosnąco
+  const sortMode = options?.sort || options?.sortBy || "name";
 
-  if (options?.sortBy) {
-    // Nie mutuj wejściowego zbioru (to filter() i [...products] zapewniają)
-    products = [...products].sort((a, b) => {
-      if (options.sortBy === "name-desc") {
-        const cmp = b.name.localeCompare(a.name);
-        return cmp !== 0 ? cmp : b.id - a.id; // rozstrzyganie remisów
-      } else if (options.sortBy === "date-desc") {
-        const cmp = new Date(b.date).getTime() - new Date(a.date).getTime();
-        return cmp !== 0 ? cmp : b.id - a.id; // rozstrzyganie remisów
-      }
-      return 0;
-    });
-  }
+  products.sort((a, b) => {
+    if (sortMode === "newest" || sortMode === "date-desc") {
+      const cmp = new Date(b.date).getTime() - new Date(a.date).getTime();
+      return cmp !== 0 ? cmp : a.id - b.id; // remisy: id rosnąco
+    } else if (sortMode === "name-desc") {
+      const cmp = b.name.localeCompare(a.name, "pl");
+      return cmp !== 0 ? cmp : b.id - a.id;
+    } else {
+      // Domyślnie "name" (nazwa rosnąco wg alfabetu, remisy: id rosnąco)
+      const cmp = a.name.localeCompare(b.name, "pl");
+      return cmp !== 0 ? cmp : a.id - b.id; // remisy: id rosnąco
+    }
+  });
 
   return products;
 }
