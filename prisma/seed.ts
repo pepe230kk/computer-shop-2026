@@ -90,8 +90,94 @@ async function seed() {
         },
       });
     }
-
     console.log(`Zaimportowano/zaktualizowano ${products.length} produktów.`);
+
+    // -------------------------------------------------------------
+    // Rozszerzenie: Fikcyjny użytkownik Better Auth i 4 zamówienia
+    // -------------------------------------------------------------
+    const testUserId = "user_krzysztof_kacprzak";
+    const user = await tx.user.upsert({
+      where: { email: "krzysztof.kacprzak@student.pk.edu.pl" },
+      update: {
+        name: "Krzysztof Kacprzak",
+        emailVerified: true,
+      },
+      create: {
+        id: testUserId,
+        name: "Krzysztof Kacprzak",
+        email: "krzysztof.kacprzak@student.pk.edu.pl",
+        emailVerified: true,
+        image: null,
+      },
+    });
+
+    const ordersData = [
+      {
+        orderNumber: "ORD-2026-0001",
+        status: "COMPLETED",
+        totalPrice: 429900,
+        items: [
+          { productId: 1, productName: products[0].name, productCode: products[0].code, quantity: 1, unitPrice: products[0].price },
+          { productId: 2, productName: products[1].name, productCode: products[1].code, quantity: 2, unitPrice: products[1].price },
+        ],
+      },
+      {
+        orderNumber: "ORD-2026-0002",
+        status: "PAID",
+        totalPrice: 199900,
+        items: [
+          { productId: 3, productName: products[2].name, productCode: products[2].code, quantity: 1, unitPrice: products[2].price },
+        ],
+      },
+      {
+        orderNumber: "ORD-2026-0003",
+        status: "PENDING",
+        totalPrice: 850000,
+        items: [
+          { productId: 4, productName: products[3].name, productCode: products[3].code, quantity: 3, unitPrice: products[3].price },
+        ],
+      },
+      {
+        orderNumber: "ORD-2026-0004",
+        status: "CANCELLED",
+        totalPrice: 120000,
+        items: [
+          { productId: 5, productName: products[4].name, productCode: products[4].code, quantity: 1, unitPrice: products[4].price },
+        ],
+      },
+    ];
+
+    for (const ord of ordersData) {
+      const order = await tx.order.upsert({
+        where: { orderNumber: ord.orderNumber },
+        update: {
+          status: ord.status,
+          totalPrice: ord.totalPrice,
+        },
+        create: {
+          orderNumber: ord.orderNumber,
+          userId: user.id,
+          status: ord.status,
+          totalPrice: ord.totalPrice,
+        },
+      });
+
+      // Idempotentne odświeżenie pozycji zamówienia
+      await tx.orderItem.deleteMany({ where: { orderId: order.id } });
+      for (const item of ord.items) {
+        await tx.orderItem.create({
+          data: {
+            orderId: order.id,
+            productId: item.productId,
+            productName: item.productName,
+            productCode: item.productCode,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+          },
+        });
+      }
+    }
+    console.log("Zainicjalizowano 4 deterministyczne zamówienia demonstracyjne ze snapshotem cenowym.");
   });
 
   console.log("Seedowanie zakończone pomyślnie!");

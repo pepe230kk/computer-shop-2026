@@ -28,7 +28,59 @@ model Product {
   categoryId  Int
   category    Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
 
+  // Relacja z pozycjami zamówień (rozszerzenie: Historia zamówień)
+  orderItems  OrderItem[]
+
   @@index([categoryId, amount])
   @@index([nameSortKey])
   @@index([date])
+}
+
+// -------------------------------------------------------------
+// Rozszerzenie: Historia zamówień (Sekcja 10 instrukcji)
+// -------------------------------------------------------------
+
+// Model User zgodny ze specyfikacją Better Auth
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  orders        Order[]
+}
+
+// Zamówienie z unikalnym numerem, jawnym statusem i sumaryczną kwotą w groszach
+model Order {
+  id          Int         @id @default(autoincrement())
+  orderNumber String      @unique
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  status      String      // PENDING, PAID, CANCELLED, COMPLETED
+  totalPrice  Int         // łączna kwota w groszach
+  items       OrderItem[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([userId])
+}
+
+// Pozycja zamówienia z pełnym snapshotem danych w chwili zakupu
+model OrderItem {
+  id          Int      @id @default(autoincrement())
+  orderId     Int
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   Int?
+  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productName String   // snapshot nazwy produktu z chwili zakupu
+  productCode String   // snapshot kodu produktu z chwili zakupu
+  quantity    Int      // ilość sztuk (CHECK: quantity > 0)
+  unitPrice   Int      // cena jednostkowa w groszach (CHECK: unitPrice >= 0)
+  createdAt   DateTime @default(now())
+
+  @@index([orderId])
+  @@index([productId])
 }

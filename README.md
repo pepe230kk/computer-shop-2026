@@ -32,19 +32,22 @@ docker compose up -d --wait
 # 5. Zastosowanie migracji schematu bazy danych
 npx prisma migrate deploy
 
-# 6. Idempotentne załadowanie danych początkowych (seedowanie 4 kategorii i 100 produktów)
+# 6. Idempotentne załadowanie danych początkowych (seedowanie kategorii, produktów oraz historii zamówień)
 npx prisma db seed
 
 # 7. Uruchomienie testów integracyjnych (28 testów sprawdzających bazę, walidacje, CHECK constraints)
 npm test
 
-# 8. Sprawdzenie zgodności kodu z linterem
+# 8. Sprawdzenie działania rozszerzenia Historia Zamówień (snapshot cenowy, CHECK constraints)
+npx tsx scripts/verify-orders.ts
+
+# 9. Sprawdzenie zgodności kodu z linterem
 npm run lint
 
-# 9. Budowanie produkcyjne aplikacji
+# 10. Budowanie produkcyjne aplikacji
 npm run build
 
-# 10. Uruchomienie serwera aplikacji (domyślnie: http://localhost:3000)
+# 11. Uruchomienie serwera aplikacji (domyślnie: http://localhost:3000)
 npm run start
 
 # Tryb deweloperski Next.js (z automatycznym przeładowaniem Turbopack)
@@ -78,10 +81,11 @@ Kontenery Dockera są z natury ulotne (*ephemeral*) – wszelkie dane zapisywane
 ## 3. Konfiguracja Prisma 7 i model danych
 
 ### 3.1 Modele Prisma i relacje
-W `prisma/schema.prisma` zdefiniowano dwa powiązane modele:
+W `prisma/schema.prisma` zdefiniowano powiązane modele:
 * `Category`:
   * `id` (Int, klucz główny, autoincrement)
-  * `name` (String, unikalny identyfikator tekstowy kategorii: `cpu`, `gpu`, `ram`, `disk`)
+  * `code` (String, unikalny kod kategorii: `cpu`, `gpu`, `ram`, `disk`)
+  * `name` (String, nazwa kategorii)
   * `products` (relacja jeden-do-wielu z modelem `Product`)
 * `Product`:
   * `id` (Int, klucz główny – zachowujący stałe identyfikatory z `data/products.json`)
@@ -159,8 +163,8 @@ ALTER TABLE "Product" ALTER COLUMN "nameSortKey" TYPE TEXT COLLATE "C";
 ### 5.1 Zasada działania
 Proces seedowania bazy danych zaimplementowano w skrypcie `prisma/seed.ts`:
 1. **Walidacja danych źródłowych**: plik `data/products.json` jest odczytywany i weryfikowany schematem `ProductListSchema` (Zod), sprawdzającym unikalność identyfikatorów, dodatnie ceny i poprawność formatów.
-2. **Atomiczna transakcja**: cała operacja seedowania 4 kategorii (`cpu`, `gpu`, `ram`, `disk`) oraz 100 produktów wykonuje się w pojedynczej transakcji `prisma.$transaction()`.
-3. **Mechanizm `upsert`**: dla każdego produktu i kategorii wykonywana jest operacja `upsert`:
+2. **Atomiczna transakcja**: cała operacja seedowania 4 kategorii (`cpu`, `gpu`, `ram`, `disk`), 100 produktów oraz 4 zamówień demonstracyjnych wykonuje się w pojedynczej transakcji `prisma.$transaction()`.
+3. **Mechanizm `upsert`**: dla każdego produktu, kategorii i zamówienia wykonywana jest operacja `upsert`:
    * Jeśli rekord o danym ID już istnieje – aktualizowane są jego właściwości.
    * Jeśli rekord nie istnieje – jest wstawiany jako nowy.
 
@@ -168,10 +172,10 @@ Proces seedowania bazy danych zaimplementowano w skrypcie `prisma/seed.ts`:
 
 #### Czym jest idempotentność i jak została zrealizowana?
 Operacja jest **idempotentna**, jeśli jej wielokrotne wykonanie daje dokładnie taki sam rezultat końcowy jak pojedyncze wykonanie, bez generowania błędów duplikacji klucza głównego ani powielania wierszy.  
-W `prisma/seed.ts` idempotentność zapewniają klauzule `upsert` bazujące na unikalnych identyfikatorach `id` (dla produktów) oraz `name` (dla kategorii). Wielokrotne uruchomienie `npx prisma db seed` za każdym razem kończy się sukcesem i pozostawia w bazie dokładnie 4 kategorie i 100 produktów.
+W `prisma/seed.ts` idempotentność zapewniają klauzule `upsert` bazujące na unikalnych identyfikatorach `id` (dla produktów), `code` (dla kategorii) oraz `orderNumber` (dla zamówień). Wielokrotne uruchomienie `npx prisma db seed` za każdym razem kończy się sukcesem i pozostawia w bazie dokładnie tę samą, spójną liczbę rekordów.
 
 #### Dlaczego operacje seedowania powinny być w transakcji bazy danych?
-Transakcja gwarantuje właściwość **ACID** (w szczególności atomowość – *Atomicity*). Gdyby podczas seedowania 70. produktu wystąpił błąd (np. błąd sieci, naruszenie więzów), brak transakcji pozostawiłby bazę danych w niespójnym, częściowo wypełnionym stanie ("brudne dane"). Transakcja zapewnia wycofanie (*ROLLBACK*) wszystkich zmian w razie jakiegokolwiek niepowodzenia, pozostawiając bazę w czystym stanie początkowym.
+Transakcja gwarantuje właściwość **ACID** (w szczególności atomowość – *Atomicity*). Gdyby podczas seedowania wystąpił błąd (np. błąd sieci, naruszenie więzów), brak transakcji pozostawiłby bazę danych w niespójnym, częściowo wypełnionym stanie ("brudne dane"). Transakcja zapewnia wycofanie (*ROLLBACK*) wszystkich zmian w razie jakiegokolwiek niepowodzenia, pozostawiając bazę w czystym stanie początkowym.
 
 ---
 
@@ -250,9 +254,46 @@ Raw query failed. Code: `23514`. Message: `new row for relation "Product" violat
 
 ---
 
-## 9. Wyniki testów i weryfikacji
+## 9. Zrealizowane rozszerzenie: Historia zamówień (Sekcja 10 instrukcji)
 
-* **Testy integracyjne (`npm test`)**: 28/28 testów zakończonych sukcesem (czas wykonania ~2.8s):
+Zgodnie z wymaganiami Sekcji 10 zaimplementowano pełne rozszerzenie **Historia zamówień** przygotowujące aplikację do obsługi relacji w kolejnych laboratoriach:
+
+### 9.1 Modele danych i relacje
+* **`User`**: model użytkownika zgodny ze specyfikacją Better Auth (`id` typu String, `name`, unikalny `email`, `emailVerified`, opcjonalne `image`, znaczniki `createdAt` i `updatedAt`).
+* **`Order`**: model zamówienia z unikalnym numerem (`orderNumber`), kluczem obcym do `User` (`onDelete: Restrict`), jawnym statusem (`PENDING`, `PAID`, `CANCELLED`, `COMPLETED`) oraz sumą zamówienia w dokładnych groszach (`totalPrice`).
+* **`OrderItem`**: model pozycji zamówienia powiązany z `Order` (`onDelete: Cascade`) oraz opcjonalnie z `Product` (`onDelete: SetNull`). Przechowuje pełną migawkę (*snapshot*) z chwili zakupu:
+  * `productName` – kopia nazwy produktu
+  * `productCode` – kopia kodu towarowego
+  * `quantity` – ilość zakupionych sztuk
+  * `unitPrice` – cena jednostkowa w groszach w momencie złożenia zamówienia
+
+### 9.2 Więzy integralności w PostgreSQL (migracja SQL)
+W dedykowanej migracji `prisma/migrations/20261027123000_order_history/migration.sql` dodano więzy:
+```sql
+ALTER TABLE "OrderItem" ADD CONSTRAINT "order_item_quantity_positive" CHECK ("quantity" > 0);
+ALTER TABLE "OrderItem" ADD CONSTRAINT "order_item_unit_price_nonnegative" CHECK ("unitPrice" >= 0);
+```
+
+### 9.3 Ochrona historii i niezmienność cen (Snapshot)
+1. **Niezmienność cen**: pozycja zamówienia posiada własną kopię ceny jednostkowej (`unitPrice`). Późniejsza zmiana ceny produktu w katalogu (`Product.price`) **nie modyfikuje** wartości historycznego zamówienia.
+2. **Zachowanie historii przy usunięciu produktu**: powiązanie z produktem posiada regułę `onDelete: SetNull`. Jeśli produkt zostanie wycofany lub usunięty, pozycja w historii zamówień nadal zachowuje pełne dane (`productName`, `productCode`, `quantity`, `unitPrice`).
+3. **4 deterministyczne zamówienia**: skrypt seedujący tworzy 4 zamówienia o różnych statusach dla użytkownika `Krzysztof Kacprzak`.
+
+### 9.4 Weryfikacja rozszerzenia (`scripts/verify-orders.ts`)
+Do weryfikacji i demonstracji rozszerzenia służy dedykowany skrypt:
+```bash
+npx tsx scripts/verify-orders.ts
+```
+Skrypt automatycznie:
+1. Odczytuje 4 zamówienia wraz z pozycjami i powiązaniami.
+2. Modyfikuje cenę produktu w bazie o +500 zł i dowodzi, że cena w zamówieniu pozostała niezmieniona.
+3. Testuje odrzucenie ujemnej ceny jednostkowej oraz zerowej ilości przez więzy CHECK w PostgreSQL.
+
+---
+
+## 10. Wyniki testów i weryfikacji
+
+* **Testy integracyjne (`npm test`)**: 28/28 testów zakończonych sukcesem (czas wykonania ~2.6s):
   * Testy repozytorium Prisma na aktywnej bazie PostgreSQL (odczyt, sortowanie, filtry, relacje).
   * Test natychmiastowej widoczności zmian stanu magazynowego w repozytorium po aktualizacji w bazie.
   * Test weryfikujący odrzucenie ujemnego stanu magazynowego przez więz CHECK w PostgreSQL.
