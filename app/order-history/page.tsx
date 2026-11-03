@@ -1,23 +1,63 @@
 import { connection } from "next/server";
 import { prisma } from "../lib/db";
+import { getSession } from "../lib/cart";
+import Link from "next/link";
+import AuthNav from "../components/auth-nav";
 
-// Wymuszenie dynamicznego renderowania zgodnie z wytycznymi Lab 08
+// Wymuszenie dynamicznego renderowania zgodnie z wytycznymi Lab 08 i Lab 09
 export const dynamic = "force-dynamic";
 
 export default async function OrderHistoryPage() {
   await connection();
 
-  // Pobranie zamówień z bazy PostgreSQL przez Prisma Client
+  const session = await getSession();
+
+  // Wymóg Rozszerzenia 2: Pełna izolacja danych użytkowników (Zero-Trust)
+  if (!session || !session.user) {
+    return (
+      <div>
+        <h1 style={{ marginBottom: "1.5rem" }}>Historia zamówień</h1>
+        <div className="content-box" style={{ textAlign: "center", padding: "4rem 2rem" }}>
+          <svg
+            width="64"
+            height="64"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#9ca3af"
+            strokeWidth="1.5"
+            style={{ margin: "0 auto 1.5rem auto", display: "block" }}
+          >
+            <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <h2 style={{ fontSize: "1.5rem", marginBottom: "0.75rem" }}>Zaloguj się, aby zobaczyć historię zamówień</h2>
+          <p style={{ color: "#bcbcb7", maxWidth: "520px", margin: "0 auto 2rem auto", lineHeight: "1.6" }}>
+            Historia zakupów jest ściśle przypisana do Twojego konta. Zaloguj się przez GitHub poniżej,
+            aby przeglądać swoje archiwalne zamówienia i snapshoty cenowe.
+          </p>
+          <div style={{ display: "flex", justifyContent: "center", gap: "1rem", flexWrap: "wrap", alignItems: "center" }}>
+            <AuthNav />
+            <Link href="/product-list" className="btn-action" style={{ padding: "0.45rem 1.25rem", background: "transparent", border: "1px solid rgba(255,255,255,0.2)" }}>
+              &larr; Wróć do katalogu
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Pobranie zamówień WYŁĄCZNIE zalogowanego użytkownika (Zero-Trust)
   const orders = await prisma.order.findMany({
+    where: {
+      userId: session.user.id,
+    },
     include: {
-      user: true,
       items: {
         include: {
           product: true,
         },
       },
     },
-    orderBy: { id: "asc" },
+    orderBy: { createdAt: "desc" },
   });
 
   // Odwzorowanie statusów na czytelne etykiety i kolory
@@ -39,16 +79,19 @@ export default async function OrderHistoryPage() {
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: "1rem", marginBottom: "1.5rem" }}>
-        <h1 style={{ margin: 0 }}>Historia zamówień</h1>
+        <h1 style={{ margin: 0 }}>Twoja historia zamówień</h1>
         <p style={{ color: "#bcbcb7", margin: 0, fontSize: "0.95rem" }}>
-          Liczba zarejestrowanych zamówień: <strong>{orders.length}</strong>
+          Zalogowano jako: <strong>{session.user.name || session.user.email}</strong> | Zamówień: <strong>{orders.length}</strong>
         </p>
       </div>
 
       {orders.length === 0 ? (
         <div className="content-box" style={{ textAlign: "center", padding: "3rem" }}>
           <h2>Brak historii zamówień</h2>
-          <p style={{ color: "#bcbcb7" }}>Nie zarejestrowano jeszcze żadnych zamówień w bazie danych PostgreSQL.</p>
+          <p style={{ color: "#bcbcb7", marginBottom: "1.5rem" }}>Nie złożyłeś jeszcze żadnych zamówień w naszym sklepie.</p>
+          <Link href="/product-list" className="btn-action">
+            Rozpocznij zakupy &rarr;
+          </Link>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
@@ -58,6 +101,8 @@ export default async function OrderHistoryPage() {
               year: "numeric",
               month: "long",
               day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
             });
             const formattedTotal = (order.totalPrice / 100).toFixed(2);
 
@@ -69,7 +114,7 @@ export default async function OrderHistoryPage() {
                       Zamówienie {order.orderNumber}
                     </h2>
                     <span style={{ fontSize: "0.85rem", color: "#bcbcb7" }}>
-                      Data: {formattedDate} | Klient: <strong>{order.user.name}</strong> ({order.user.email})
+                      Złożono: {formattedDate}
                     </span>
                   </div>
                   <div style={{
@@ -122,7 +167,7 @@ export default async function OrderHistoryPage() {
                     * Ceny jednostkowe i nazwy produktów utrwalone w chwili zakupu (snapshot cenowy).
                   </span>
                   <div style={{ fontSize: "1.2rem" }}>
-                    Łączna kwota: <strong style={{ color: "#ffffff" }}>{formattedTotal} zł</strong>
+                    Łączna kwota: <strong style={{ color: "#22c55e" }}>{formattedTotal} zł</strong>
                   </div>
                 </div>
               </article>
