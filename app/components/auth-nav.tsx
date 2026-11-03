@@ -9,6 +9,7 @@ export default function AuthNav() {
   const { data: session, isPending } = authClient.useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   if (isPending) {
     return <span style={{ fontSize: "0.85rem", color: "#888" }}>Ładowanie...</span>;
@@ -71,8 +72,50 @@ export default function AuthNav() {
     );
   }
 
+  const handleDemoLogin = async () => {
+    setLoading(true);
+    setErrorMsg(null);
+    const res = await authClient.signIn.email({
+      email: "krzysztof.kacprzak@student.pk.edu.pl",
+      password: "DemoPass123!",
+    });
+    setLoading(false);
+    if (res.error) {
+      setErrorMsg(res.error.message || "Błąd logowania");
+    } else {
+      router.refresh();
+    }
+  };
+
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+      {/* 1-kliknięcie logowanie demonstracyjne */}
+      <button
+        onClick={handleDemoLogin}
+        disabled={loading}
+        title="Zaloguj jako Krzysztof Kacprzak (konto demonstracyjne)"
+        style={{
+          background: "#16a34a",
+          border: "none",
+          color: "#fff",
+          padding: "0.4rem 0.75rem",
+          borderRadius: "6px",
+          fontSize: "0.85rem",
+          fontWeight: 600,
+          cursor: loading ? "not-allowed" : "pointer",
+          display: "flex",
+          alignItems: "center",
+          gap: "0.35rem",
+        }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+        </svg>
+        {loading ? "Logowanie..." : "Zaloguj (Krzysztof K.)"}
+      </button>
+
+      {/* Logowanie przez GitHub */}
       <button
         onClick={async () => {
           setLoading(true);
@@ -82,11 +125,12 @@ export default function AuthNav() {
           });
         }}
         disabled={loading}
+        title="Zaloguj przez GitHub OAuth"
         style={{
           background: "#24292f",
           border: "1px solid #444",
           color: "#fff",
-          padding: "0.4rem 0.8rem",
+          padding: "0.4rem 0.75rem",
           borderRadius: "6px",
           fontSize: "0.85rem",
           cursor: "pointer",
@@ -95,11 +139,13 @@ export default function AuthNav() {
           gap: "0.4rem",
         }}
       >
-        <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor">
+        <svg height="15" width="15" viewBox="0 0 16 16" fill="currentColor">
           <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
         </svg>
-        Zaloguj przez GitHub
+        GitHub
       </button>
+
+      {errorMsg && <span style={{ color: "#f87171", fontSize: "0.75rem" }}>{errorMsg}</span>}
     </div>
   );
 }

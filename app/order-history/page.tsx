@@ -2,6 +2,7 @@ import { connection } from "next/server";
 import { prisma } from "../lib/db";
 import { getSession } from "../lib/cart";
 import Link from "next/link";
+import AuthNav from "../components/auth-nav";
 
 // Wymuszenie dynamicznego renderowania zgodnie z wytycznymi Lab 08 i Lab 09
 export const dynamic = "force-dynamic";
@@ -29,13 +30,16 @@ export default async function OrderHistoryPage() {
             <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
           <h2 style={{ fontSize: "1.5rem", marginBottom: "0.75rem" }}>Zaloguj się, aby zobaczyć historię zamówień</h2>
-          <p style={{ color: "#bcbcb7", maxWidth: "480px", margin: "0 auto 2rem auto", lineHeight: "1.6" }}>
-            Historia zakupów jest ściśle przypisana do Twojego konta. Zaloguj się przez GitHub,
-            aby przeglądać swoje archiwalne zamówienia, statusy oraz snapshoty cenowe.
+          <p style={{ color: "#bcbcb7", maxWidth: "520px", margin: "0 auto 2rem auto", lineHeight: "1.6" }}>
+            Historia zakupów jest ściśle przypisana do Twojego konta. Zaloguj się jednym kliknięciem poniżej
+            lub przez GitHub OAuth, aby przeglądać swoje archiwalne zamówienia i snapshoty cenowe.
           </p>
-          <Link href="/product-list" className="btn-action" style={{ padding: "0.6rem 1.25rem", background: "transparent", border: "1px solid rgba(255,255,255,0.2)" }}>
-            &larr; Wróć do katalogu
-          </Link>
+          <div style={{ display: "flex", justifyContent: "center", gap: "1rem", flexWrap: "wrap", alignItems: "center" }}>
+            <AuthNav />
+            <Link href="/product-list" className="btn-action" style={{ padding: "0.45rem 1.25rem", background: "transparent", border: "1px solid rgba(255,255,255,0.2)" }}>
+              &larr; Wróć do katalogu
+            </Link>
+          </div>
         </div>
       </div>
     );

@@ -2,6 +2,7 @@ import { connection } from "next/server";
 import { getSession, getMyCart } from "../lib/cart";
 import CartViewClient from "./cart-view";
 import Link from "next/link";
+import AuthNav from "../components/auth-nav";
 
 export const dynamic = "force-dynamic";
 
@@ -27,12 +28,13 @@ export default async function BasketPage() {
             <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
           <h2 style={{ fontSize: "1.5rem", marginBottom: "0.75rem" }}>Zaloguj się, aby uzyskać dostęp do koszyka</h2>
-          <p style={{ color: "#bcbcb7", maxWidth: "480px", margin: "0 auto 2rem auto", lineHeight: "1.6" }}>
+          <p style={{ color: "#bcbcb7", maxWidth: "520px", margin: "0 auto 2rem auto", lineHeight: "1.6" }}>
             Twój koszyk jest ściśle powiązany z Twoim kontem użytkownika i chroniony po stronie serwera.
-            Zaloguj się za pośrednictwem GitHub, aby przeglądać dodane produkty i finalizować zamówienia.
+            Zaloguj się jednym kliknięciem poniżej lub przez GitHub OAuth.
           </p>
-          <div style={{ display: "flex", justifyContent: "center", gap: "1rem", flexWrap: "wrap" }}>
-            <Link href="/product-list" className="btn-action" style={{ padding: "0.6rem 1.25rem", background: "transparent", border: "1px solid rgba(255,255,255,0.2)" }}>
+          <div style={{ display: "flex", justifyContent: "center", gap: "1rem", flexWrap: "wrap", alignItems: "center" }}>
+            <AuthNav />
+            <Link href="/product-list" className="btn-action" style={{ padding: "0.45rem 1.25rem", background: "transparent", border: "1px solid rgba(255,255,255,0.2)" }}>
               &larr; Wróć do katalogu
             </Link>
           </div>
