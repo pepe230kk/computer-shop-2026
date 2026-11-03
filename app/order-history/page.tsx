@@ -31,8 +31,8 @@ export default async function OrderHistoryPage() {
           </svg>
           <h2 style={{ fontSize: "1.5rem", marginBottom: "0.75rem" }}>Zaloguj się, aby zobaczyć historię zamówień</h2>
           <p style={{ color: "#bcbcb7", maxWidth: "520px", margin: "0 auto 2rem auto", lineHeight: "1.6" }}>
-            Historia zakupów jest ściśle przypisana do Twojego konta. Zaloguj się jednym kliknięciem poniżej
-            lub przez GitHub OAuth, aby przeglądać swoje archiwalne zamówienia i snapshoty cenowe.
+            Historia zakupów jest ściśle przypisana do Twojego konta. Zaloguj się przez GitHub poniżej,
+            aby przeglądać swoje archiwalne zamówienia i snapshoty cenowe.
           </p>
           <div style={{ display: "flex", justifyContent: "center", gap: "1rem", flexWrap: "wrap", alignItems: "center" }}>
             <AuthNav />

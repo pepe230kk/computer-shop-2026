@@ -30,7 +30,7 @@ export default async function BasketPage() {
           <h2 style={{ fontSize: "1.5rem", marginBottom: "0.75rem" }}>Zaloguj się, aby uzyskać dostęp do koszyka</h2>
           <p style={{ color: "#bcbcb7", maxWidth: "520px", margin: "0 auto 2rem auto", lineHeight: "1.6" }}>
             Twój koszyk jest ściśle powiązany z Twoim kontem użytkownika i chroniony po stronie serwera.
-            Zaloguj się jednym kliknięciem poniżej lub przez GitHub OAuth.
+            Zaloguj się przez GitHub poniżej, aby zarządzać koszykiem i składać zamówienia.
           </p>
           <div style={{ display: "flex", justifyContent: "center", gap: "1rem", flexWrap: "wrap", alignItems: "center" }}>
             <AuthNav />
