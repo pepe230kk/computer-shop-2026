@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { connection } from "next/server";
 import { getProductById } from "../../lib/repository";
 import { parseAndValidateId } from "../../lib/params";
+import AddToCartButton from "../../components/add-to-cart-button";
 
 // Zgodnie z wytycznymi Lab 08 (Sekcja 7):
 // Usunięto generateStaticParams z Lab 07. Wymuszone dynamiczne renderowanie (force-dynamic),
@@ -111,6 +112,10 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
             <div className={`product-stock ${product.amount > 0 ? "in" : "out"}`} style={{ fontSize: "1.1rem", marginBottom: "1.5rem" }}>
               Stan magazynowy:{" "}
               <strong>{product.amount > 0 ? `${product.amount} szt.` : "Produkt chwilowo niedostępny (0 szt.)"}</strong>
+            </div>
+
+            <div style={{ marginBottom: "1.5rem", maxWidth: "240px" }}>
+              <AddToCartButton productId={product.id} disabled={product.amount <= 0} />
             </div>
 
             <div style={{ marginBottom: "1.5rem" }}>

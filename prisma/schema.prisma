@@ -28,7 +28,10 @@ model Product {
   categoryId  Int
   category    Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
 
-  // Relacja z pozycjami zamówień (rozszerzenie: Historia zamówień)
+  // Relacja z koszykiem (Lab 09)
+  cartItems   CartItem[]
+
+  // Relacja z pozycjami zamówień (Lab 08 i rozszerzenie checkout w Lab 09)
   orderItems  OrderItem[]
 
   @@index([categoryId, amount])
@@ -37,10 +40,9 @@ model Product {
 }
 
 // -------------------------------------------------------------
-// Rozszerzenie: Historia zamówień (Sekcja 10 instrukcji)
+// Modele Better Auth (Lab 09)
 // -------------------------------------------------------------
 
-// Model User zgodny ze specyfikacją Better Auth
 model User {
   id            String    @id @default(cuid())
   name          String
@@ -50,25 +52,104 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  sessions      Session[]
+  accounts      Account[]
+  cart          Cart?
   orders        Order[]
 }
 
-// Zamówienie z unikalnym numerem, jawnym statusem i sumaryczną kwotą w groszach
-model Order {
-  id          Int         @id @default(autoincrement())
-  orderNumber String      @unique
-  userId      String
-  user        User        @relation(fields: [userId], references: [id], onDelete: Restrict)
-  status      String      // PENDING, PAID, CANCELLED, COMPLETED
-  totalPrice  Int         // łączna kwota w groszach
-  items       OrderItem[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
 
-// Pozycja zamówienia z pełnym snapshotem danych w chwili zakupu
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+
+  @@index([identifier])
+}
+
+// -------------------------------------------------------------
+// Modele koszyka (Lab 09)
+// -------------------------------------------------------------
+
+model Cart {
+  id        Int        @id @default(autoincrement())
+  userId    String     @unique
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id        Int      @id @default(autoincrement())
+  cartId    Int
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int      // PostgreSQL CHECK: quantity BETWEEN 1 AND 99
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([cartId, productId])
+  @@index([cartId])
+  @@index([productId])
+}
+
+// -------------------------------------------------------------
+// Modele zamówień (Lab 08 i rozszerzenia Lab 09)
+// -------------------------------------------------------------
+
+model Order {
+  id             Int         @id @default(autoincrement())
+  orderNumber    String      @unique
+  idempotencyKey String?     @unique
+  userId         String
+  user           User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  status         String      // PENDING, PAID, CANCELLED, COMPLETED
+  totalPrice     Int         // łączna kwota w groszach
+  items          OrderItem[]
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([idempotencyKey])
+}
+
 model OrderItem {
   id          Int      @id @default(autoincrement())
   orderId     Int
@@ -77,8 +158,8 @@ model OrderItem {
   product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
   productName String   // snapshot nazwy produktu z chwili zakupu
   productCode String   // snapshot kodu produktu z chwili zakupu
-  quantity    Int      // ilość sztuk (CHECK: quantity > 0)
-  unitPrice   Int      // cena jednostkowa w groszach (CHECK: unitPrice >= 0)
+  quantity    Int      // PostgreSQL CHECK: quantity > 0
+  unitPrice   Int      // PostgreSQL CHECK: unitPrice >= 0 (w groszach)
   createdAt   DateTime @default(now())
 
   @@index([orderId])

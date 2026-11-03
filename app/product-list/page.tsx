@@ -5,6 +5,7 @@ import { connection } from "next/server";
 import { getProducts } from "../lib/repository";
 import { parseCatalogQueryParams } from "../lib/params";
 import ProductFilters from "./product-filters";
+import AddToCartButton from "../components/add-to-cart-button";
 
 // Wymuszenie dynamicznego renderowania zgodnie z wytycznymi Lab 08
 export const dynamic = "force-dynamic";
@@ -106,11 +107,12 @@ export default async function ProductList({ searchParams }: ProductListPageProps
               <div className={`product-stock ${product.amount > 0 ? 'in' : 'out'}`}>
                 Dostępność: {product.amount > 0 ? `${product.amount} szt.` : "Brak w magazynie"}
               </div>
-              <div style={{ marginTop: "1rem" }}>
+              <div style={{ marginTop: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <AddToCartButton productId={product.id} disabled={product.amount <= 0} compact />
                 <Link
                   href={`/product-list/${product.id}`}
                   className="btn-action"
-                  style={{ display: "block", textAlign: "center", padding: "0.5rem 1rem", fontSize: "0.9rem" }}
+                  style={{ display: "block", textAlign: "center", padding: "0.45rem 1rem", fontSize: "0.85rem", background: "transparent", border: "1px solid rgba(255,255,255,0.2)" }}
                 >
                   Szczegóły produktu
                 </Link>
