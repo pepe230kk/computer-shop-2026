@@ -14,7 +14,7 @@ Aplikacja demonstracyjna sklepu komputerowego rozwijana w ramach przedmiotu **Pr
 * **Region bazy danych PostgreSQL:** `eu-central-1` (Frankfurt – kolokacja z instancją aplikacji Vercel)
 * **Kolejność procesu wydawniczego:** `Testy (CI) -> Migracje (DDL) -> Publikacja (Deploy) -> Odbiór (Verification)`
 * **Gałąź i Pull Request:** PR `lab10 -> main`
-* **Wdrożony commit (SHA):** `HEAD` gałęzi produkcyjnej po przejściu bramki jakości
+* **Wdrożony commit (SHA):** `8966429` (gałąź `lab10`, gotowa do scalenia w PR do `main`)
 
 ---
 
