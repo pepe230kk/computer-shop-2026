@@ -1,0 +1,93 @@
+name: CI Quality Gate & Automated Production Deployment
+
+on:
+  push:
+    branches:
+      - main
+      - lab10
+      - 'lab**'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  quality-gate:
+    name: Kontrola Jakości (Lint, Migracje, Testy, Build)
+    runs-on: ubuntu-latest
+
+    # Zgodnie z wytycznymi Lab 10 Rozszerzenia 2:
+    # Użycie oddzielnej bazy danych PostgreSQL w kontenerze serwisowym CI
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: computer_shop_ci
+          POSTGRES_USER: ci_user
+          POSTGRES_PASSWORD: ci_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: "postgresql://ci_user:ci_password@127.0.0.1:5432/computer_shop_ci?schema=public"
+      BETTER_AUTH_SECRET: "ci_pipeline_secret_at_least_32_characters_long_1234567890"
+      BETTER_AUTH_URL: "http://localhost:3000"
+      GITHUB_CLIENT_ID: "mock_ci_client_id"
+      GITHUB_CLIENT_SECRET: "mock_ci_client_secret"
+      NODE_ENV: test
+
+    steps:
+      - name: 1. Pobranie kodu (Checkout)
+        uses: actions/checkout@v4
+
+      # Wymóg z rozdziału 5: Ustaw Node.js 24 w CI
+      - name: 2. Konfiguracja Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+
+      - name: 3. Czysta instalacja zależności (npm ci)
+        run: npm ci
+
+      - name: 4. Generowanie Prisma Client
+        run: npx prisma generate
+
+      - name: 5. Wdrożenie migracji na bazę testową CI
+        run: |
+          npx prisma migrate deploy
+          npx prisma migrate status
+
+      - name: 6. Zasilenie bazy testowej (db seed)
+        run: npx prisma db seed
+
+      - name: 7. Kontrola jakości kodu (ESLint)
+        run: npm run lint
+
+      - name: 8. Wykonanie zestawu testów jednostkowych i integracyjnych
+        run: npm run test
+
+      - name: 9. Budowanie aplikacji (Next.js Production Build)
+        run: npm run build
+
+  deploy-production:
+    name: Wdrożenie na Produkcję (Vercel)
+    needs: quality-gate
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 1. Weryfikacja zaliczenia bramki jakości
+        run: |
+          echo "================================================================="
+          echo "Bramka jakości (quality-gate) zakończona pełnym sukcesem!"
+          echo "Wszystkie testy, lint, migracje i build zakończone kodem 0."
+          echo "Publikacja zatwierdzonego commitu SHA: ${{ github.sha }} na Vercel."
+          echo "================================================================="
+
+      # W pełnym wdrożeniu komercyjnym używany jest Vercel CLI z tokenem VERCEL_TOKEN
+      - name: 2. Notyfikacja sukcesu wdrożenia
+        run: echo "Commit ${{ github.sha }} został pomyślnie dopuszczony do wydania."

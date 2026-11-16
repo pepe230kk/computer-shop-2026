@@ -11,8 +11,16 @@
     "test": "node --conditions react-server --import tsx --test app/lib/repository.test.ts app/lib/cart.test.ts",
     "test:repo": "node --conditions react-server --import tsx --test app/lib/repository.test.ts",
     "test:cart": "node --conditions react-server --import tsx --test app/lib/cart.test.ts",
+    "test:e2e": "playwright test",
+    "perf:measure": "node --conditions react-server --import tsx scripts/measure-performance.ts",
+    "db:backup": "node --conditions react-server --import tsx scripts/backup-restore.ts",
+    "verify:env": "node --conditions react-server --import tsx scripts/verify-env-isolation.ts",
+    "verify:ci": "node --conditions react-server --import tsx scripts/verify-ci-blocking.ts",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate"
+  },
+  "engines": {
+    "node": "24.x"
   },
   "dependencies": {
     "@better-auth/prisma-adapter": "1.7.14",
@@ -28,7 +36,8 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@types/node": "^20",
+    "@playwright/test": "^1.50.1",
+    "@types/node": "^22",
     "@types/pg": "8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
